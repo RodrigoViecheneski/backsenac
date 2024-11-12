@@ -87,7 +87,8 @@ class Contatos {
             return FALSE;
         }else{
             try{
-                $sql = $this->con->conectar()->prepare("UPDATE contatos SET nome = :nome, telefone = :telefone, endereco = :endereco, dt_nasc = :dt_nasc, descricao = :descricao, linkedln = :linkedln, email = :email, foto = :foto WHERE id = :id");
+
+                $sql = $this->con->conectar()->prepare("UPDATE contatos SET nome = :nome, telefone = :telefone, endereco = :endereco, dt_nasc = :dt_nasc, descricao = :descricao, linkedln = :linkedln, email = :email WHERE id = :id");
                 $sql->bindValue(':nome', $nome);
                 $sql->bindValue(':telefone', $telefone);
                 $sql->bindValue(':endereco', $endereco);
@@ -95,9 +96,45 @@ class Contatos {
                 $sql->bindValue(':descricao', $descricao);
                 $sql->bindValue(':linkedln', $linkedln);
                 $sql->bindValue(':email', $email);
-                $sql->bindValue(':foto', $foto);
+               // $sql->bindValue(':foto', $foto);
                 $sql->bindValue(':id', $id);
                 $sql->execute();
+                //inserir imagens
+                if(count($foto) > 0){
+                    for($q=0;$q<count($foto['tmp_name']); $q++){
+                        $tipo = $foto['type'][$q];
+                        if(in_array($tipo, array('image/jpeg', 'image/png'))){
+                            $tmpname = md5(time().rand(0, 9999)).'.jpg';
+                            move_uploaded_file($foto['tmp_name'][$q], 'img/contatos/'.$tmpname);
+                            list($width_orig, $height_orig) = getimagesize('img/contatos/'.$tmpname);
+                            $ratio = $width_orig/$height_orig;
+
+                            $width = 500;
+                            $height = 500;
+
+                            if($width/$height > $ratio){
+                                $width = $height*$ratio;
+                            }else{
+                                $height = $width/$ratio;
+                            }
+
+                            $img = imagecreatetruecolor($width, $height);
+                            if($tipo === 'image/jpeg'){
+                                $origi = imagecreatefromjpeg('img/contatos/'.$tmpname);
+                            }elseif($tipo == 'image/png'){
+                                $origi = imagecreatefrompng('img/contatos/'.$tmpname);
+                            }
+                            imagecopyresampled($img, $origi, 0, 0, 0, 0, $width, $height, $width_orig, $height_orig);
+                            //imagem salva no servidor
+                            imagejpeg($img, 'img/contatos/'.$tmpname, 80);
+                            //salvar no banco de dados a url da foto
+                            $sql = $this->con->conectar()->prepare("INSERT INTO foto_contato SET id_contato = :id_contato, url = :url");
+                            $sql->bindValue(":id_contato", $id);
+                            $sql->bindValue(":url", $tmpname);
+                            $sql->execute();
+                        }
+                    }
+                }
                 return TRUE;               
             }catch(PDOException $ex) {
                 echo 'ERRO: '.$ex->getMessage();
@@ -108,6 +145,24 @@ class Contatos {
         $sql = $this->con->conectar()->prepare("DELETE FROM contatos WHERE id = :id");
         $sql->bindValue(':id', $id);
         $sql->execute();
+    }
+    public function getContato($id){
+        $array = array();
+        $sql = $this->con->conectar()->prepare("SELECT * FROM contatos WHERE id = :id");
+        $sql->bindValue(":id", $id);
+        $sql->execute();
+        if($sql->rowCount() > 0){
+            $array = $sql->fetch();
+            //mostrar todas as imagens cadastradas
+            $array['foto'] = array();
+            $sql = $this->con->conectar()->prepare("SELECT id, url FROM foto_contato WHERE id_contato = :id_contato");
+            $sql->bindValue("id_contato", $id);
+            $sql->execute();
+            if($sql->rowCount() > 0){
+                $array['foto'] = $sql->fetchAll();
+            }
+        }
+        return $array;
     }
 }
 
