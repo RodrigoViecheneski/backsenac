@@ -67,6 +67,16 @@ class Contatos {
             echo "ERRO: ".$ex->getMessage();
         }
     }
+    public function getFoto(){
+        $array = array();
+        $sql = $this->con->conectar()->prepare("SELECT *,
+        (select foto_contato.url from foto_contato where foto_contato.id_contato = contatos.id limit 1)as url FROM contatos");
+        $sql->execute();
+        if($sql->rowCount() > 0){
+            $array = $sql->fetchAll();
+        }
+        return $array;
+    }
     public function buscar($id){
         try{
             $sql = $this->con->conectar()->prepare("SELECT * FROM contatos WHERE id = :id");

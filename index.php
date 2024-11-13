@@ -31,7 +31,7 @@ $contato = new Contatos();
     <th>AÇÔES</th>
 </tr>
 <?php
-$lista = $contato->listar();
+$lista = $contato->getFoto();
 foreach($lista as $item):
 ?>
 <tbody>
@@ -44,7 +44,13 @@ foreach($lista as $item):
         <td><?php echo $item['descricao']?></td>
         <td><?php echo $item['linkedln']?></td>
         <td><?php echo $item['email']?></td>
-        <td><?php echo $item['foto']?></td>
+        <td>
+            <?php if(!empty($item['url'])): ?>
+                <img src="img/contatos/<?php echo $item['url'];?>" height="50px" border="0">
+            <?php else: ?>
+                <img src="img/default.png" height="50px" border="0">
+            <?php endif; ?>
+        </td>
         <td>
             <a href="editarContato.php?id=<?php echo $item['id']; ?>">EDITAR</a>
             <a href="excluirContato.php?id=<?php echo $item['id']?>" onclick="return confirm('Tem certeza que quer excluir este contato?')"> | EXCLUIR</a>
